@@ -1,0 +1,422 @@
+<%inherit file="/base.html"/>
+
+<%block name="content">
+
+<div class="home-page" id="app">
+    <div style="width:80%">
+        <p>图二和表三需等待4s左右</p>
+        <div>
+            <div id="zxchart" style="float:left;height:400px;width:60%;border:1px solid #ccc;padding:10px;"></div>
+            <div id="btchart" style="float:left;height:400px;width:40%;border:1px solid #ccc;padding:10px;"></div>
+        </div>
+        <div v-show="showTable" style="float:left">
+            <i-table style="" border :columns="thList" :data="tdList"></i-table>
+        </div>
+    </div>
+
+</div>
+<script src="https://magicbox.bk.tencent.com/static_api/v3/assets/js/jquery-1.10.2.min.js"></script>
+<script src="https://magicbox.bk.tencent.com/static_api/v3/assets/echarts-2.0/echarts-all.js"></script>
+</%block>
+
+<script>
+    var vm = new Vue({
+        el: "#app",
+        data: {
+            labelWidth: 100,
+            showTable: false,
+            id: null,
+            standChart: [],
+            pieChart: [],
+            barChart: [],
+            thList: [
+                {
+                    title: '文件系统',
+                    key: 'file_sys'
+                },
+                {
+                    title: '总大小',
+                    key: 'total'
+                },
+                {
+                    title: '已用大小',
+                    key: 'use'
+                },
+                {
+                    title: '可用大小',
+                    key: 'no_use'
+                },
+                {
+                    title: '使用率',
+                    key: 'syl'
+                },
+                {
+                    title: '挂载点',
+                    key: 'gzd'
+                }
+            ],
+            tdList: [],
+        },
+        computed: {},
+        methods: {
+            warningAlter: function (msg) {
+                this.$Modal.warning({
+                    title: "告警消息",
+                    content: msg
+                });
+            },
+            handleSpinShow() {
+                this.$Spin.show({
+                    render: (h) => {
+                        return h('div', [
+                            h('Icon', {
+                                'class': 'demo-spin-icon-load',
+                                props: {
+                                    type: 'ios-loading',
+                                    size: 18
+                                }
+                            }),
+                            h('div', 'Loading')
+                        ])
+                    }
+                });
+            },
+            handleSpinClose() {
+                this.$Spin.hide();
+            },
+            getQueryVariable: function (variable) {
+                var query = window.location.search.substring(1);
+                var vars = query.split("&");
+                for (var i = 0; i < vars.length; i++) {
+                    var pair = vars[i].split("=");
+                    if (pair[0] == variable) {
+                        return pair[1];
+                    }
+                }
+                return (false);
+            },
+            createEStandLineChart: function (conf) {
+                //this.standchart.push(echarts.init(document.getElementById("zxchart")));
+                this.standchart = echarts.init(document.getElementById("zxchart"));
+                var legendData = [];
+                for (var i = 0; i < conf.data.series.length; i++) {
+                    legendData.push(conf.data.series[i].name)
+                }
+                this.standchart.setOption({
+                    tooltip: {
+                        show: true,
+                        trigger: 'axis'
+                    },
+                    legend: {
+                        y: 'bottom',
+                        data: legendData
+                    },
+                    toolbox: {
+                        show: true,
+                        feature: {
+                            mark: {show: true},
+                            dataView: {show: true, readOnly: false},
+                            magicType: {show: true, type: ['bar', 'line']},
+                            restore: {show: true},
+                            saveAsImage: {show: true}
+                        }
+                    },
+                    calculable: true,
+                    xAxis: [
+                        {
+                            type: 'category',
+                            data: conf.data.xAxis
+                        }
+                    ],
+                    yAxis: [
+                        {
+                            type: 'value',
+                            splitArea: {show: true}
+                        }
+                    ],
+                    series: conf.data.series
+                });
+            },
+            createEPieChart: function (conf) {
+                var myChart = echarts.init(document.getElementById('btchart'));
+                var aLegend = [];
+                var series = conf.data.series;
+                for (var i = 0; i < series.length; i++) {
+                    aLegend[i] = series[i].name;
+                }
+                ;
+                // 填入数据
+                myChart.setOption({
+                    title: {
+                        text: conf.data.title,
+                        subtext: '',
+                        x: 'center'
+                    },
+                    legend: {
+                        // x : 'left',
+                        y: 'bottom',
+                        data: aLegend
+                    },
+                    tooltip: {
+                        trigger: 'item',
+                        formatter: "{a} <br/>{b} : {c} ({d}%)"
+                    },
+                    toolbox: {
+                        show: true,
+                        feature: {
+                            mark: {show: true},
+                            dataView: {show: true, readOnly: false},
+                            magicType: {
+                                show: true,
+                                type: ['pie', 'funnel'],
+                                option: {
+                                    funnel: {
+                                        x: '25%',
+                                        width: '50%',
+                                        funnelAlign: 'left',
+                                        max: conf.max
+                                    }
+                                }
+                            },
+                            restore: {show: true},
+                            saveAsImage: {show: true}
+                        }
+                    },
+                    calculable: true,
+                    series: [{
+                        // 根据名字对应到相应的系列
+                        name: '内存使用情况',
+                        type: 'pie',
+                        data: series
+                    }]
+                });
+            },
+            createEBarChart: function (conf) {
+                var myChart = echarts.init(document.getElementById('zzchart'));
+                var legendData = [];//存放变量的name
+                for (var i = 0; i < conf.data.series.length; i++) {
+                    legendData.push(conf.data.series[i].name);
+                }
+                myChart.setOption({
+                    legend: {
+                        y: 'bottom',
+                        data: legendData
+                    },
+                    tooltip: {
+                        trigger: 'axis'
+                    },
+                    toolbox: {
+                        show: true,
+                        feature: {
+                            mark: {show: true},
+                            dataView: {show: true, readOnly: false},
+                            magicType: {show: true, type: ['line', 'bar']},
+                            restore: {show: true},
+                            saveAsImage: {show: true}
+                        }
+                    },
+                    calculable: true,
+                    yAxis: [
+                        {
+                            type: 'value',
+                            splitArea: {show: true}
+                        }
+                    ],
+                    xAxis: conf.data.xAxis,
+                    series: conf.data.series
+                });
+            },
+            updateEStandLineChart:function (conf) {
+                var legendData = [];
+                for (var i = 0; i < conf.data.series.length; i++) {
+                    legendData.push(conf.data.series[i].name)
+                }
+                conf.chartdom.setOption({
+                    tooltip: {
+                        show: true,
+                        trigger: 'axis'
+                    },
+                    legend: {
+                        y: 'bottom',
+                        data: legendData
+                    },
+                    toolbox: {
+                        show: true,
+                        feature: {
+                            mark: {show: true},
+                            dataView: {show: true, readOnly: false},
+                            magicType: {show: true, type: ['bar', 'line']},
+                            restore: {show: true},
+                            saveAsImage: {show: true}
+                        }
+                    },
+                    calculable: true,
+                    xAxis: [
+                        {
+                            type: 'category',
+                            data: conf.data.xAxis
+                        }
+                    ],
+                    yAxis: [
+                        {
+                            type: 'value',
+                            splitArea: {show: true}
+                        }
+                    ],
+                    series: conf.data.series
+                });
+            },
+            updateEPieChart: function (conf) {
+                var aLegend = [];
+                var series = conf.data.series;
+                for (var i = 0; i < series.length; i++) {
+                    aLegend[i] = series[i].name;
+                };
+                // 填入数据
+                conf.chartdom.setOption({
+                    title: {
+                        text: conf.data.title,
+                        subtext: '',
+                        x: 'center'
+                    },
+                    legend: {
+                        // x : 'left',
+                        y: 'bottom',
+                        data: aLegend
+                    },
+                    tooltip: {
+                        trigger: 'item',
+                        formatter: "{a} <br/>{b} : {c} ({d}%)"
+                    },
+                    toolbox: {
+                        show: true,
+                        feature: {
+                            mark: {show: true},
+                            dataView: {show: true, readOnly: false},
+                            magicType: {
+                                show: true,
+                                type: ['pie', 'funnel'],
+                                option: {
+                                    funnel: {
+                                        x: '25%',
+                                        width: '50%',
+                                        funnelAlign: 'left',
+                                        max: conf.max
+                                    }
+                                }
+                            },
+                            restore: {show: true},
+                            saveAsImage: {show: true}
+                        }
+                    },
+                    calculable: true,
+                    series: [{
+                        // 根据名字对应到相应的系列
+                        name: '内存使用情况',
+                        type: 'pie',
+                        data: series
+                    }]
+                });
+            },
+            updateEBarChart: function (conf) {
+                var legendData = [];//存放变量的name
+                for (var i = 0; i < conf.data.series.length; i++) {
+                    legendData.push(conf.data.series[i].name);
+                }
+                conf.chartdom.setOption({
+                    legend: {
+                        y: 'bottom',
+                        data: legendData
+                    },
+                    tooltip: {
+                        trigger: 'axis'
+                    },
+                    toolbox: {
+                        show: true,
+                        feature: {
+                            mark: {show: true},
+                            dataView: {show: true, readOnly: false},
+                            magicType: {show: true, type: ['line', 'bar']},
+                            restore: {show: true},
+                            saveAsImage: {show: true}
+                        }
+                    },
+                    calculable: true,
+                    yAxis: [
+                        {
+                            type: 'value',
+                            splitArea: {show: true}
+                        }
+                    ],
+                    xAxis: conf.data.xAxis,
+                    series: conf.data.series
+                });
+            },
+            getEStandChartData: function () {
+                this.$http.get('get_estand_data', {id: this.id}).then(res => {
+                    result_data = res.data;
+                    let conf = {
+                        data: result_data.data,
+                    };
+                    this.createEStandLineChart(conf);
+                });
+                //window.setInterval(() => {
+                //    this.$http.get('get_estand_data', {id: this.id}).then(res => {
+                //    result_data = res.data;
+                //    for (let i=0; i<result_data.data.length; i++){
+                //      let conf = {
+                //          chartdom: this.standChar[i],
+                //          data: result_data.data[i],
+                //      };
+                //    }
+                //    this.updateEStandLineChart(conf);
+                //});
+                //
+                //}, 6000)
+            },
+            getEPieChartData: function () {
+                this.$http.get('get_mem_data', {id: this.id}).then(res => {
+                    let result_data = res.data;
+                    let series = result_data.data.series;
+                    let total = 0;
+                    for (let i = 0; i < series.length; i++) {
+                        total += series[i].value
+                    }
+                    let conf = {
+                        data: result_data.data,
+                        max: total,
+                    };
+                    this.createEPieChart(conf);
+                });
+            },
+            getEBarChartData: function () {
+                this.$http.get('get_ebar_data', {id: this.id}).then(res => {
+                    result_data = res.data;
+                    let conf = {
+                        data: result_data.data,
+                    };
+                    this.createEBarChart(conf);
+                });
+            },
+            getFileData: function () {
+                this.$http.get('get_file_data', {id: this.id}).then(res => {
+                    this.tdList = res.data.data;
+                    this.showTable = true;
+                })
+            }
+        },
+        watch: {},
+        created: function () {
+            this.id = this.getQueryVariable('id');
+            this.getEStandChartData();
+            this.getEPieChartData();
+            this.getFileData();
+
+        },
+        mounted: function () {
+        }
+    })
+</script>
+
+
+

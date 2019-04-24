@@ -1,0 +1,195 @@
+<%inherit file="/base.html"/>
+
+<%block name="content">
+
+<div class="home-page" id="app">
+    <div style="width:80%">
+        <div>
+            <div id="zxchart" style="float:left;height:400px;width:60%;border:1px solid #ccc;padding:10px;"></div>
+        </div>
+    </div>
+
+</div>
+<script src="https://magicbox.bk.tencent.com/static_api/v3/assets/js/jquery-1.10.2.min.js"></script>
+<script src="https://magicbox.bk.tencent.com/static_api/v3/assets/echarts-2.0/echarts-all.js"></script>
+</%block>
+
+<script>
+    var vm = new Vue({
+        el: "#app",
+        data: {
+            labelWidth: 100,
+            selectBiz: null,
+            bizList: [],
+            selectedIp: "",
+            chartId: [],
+            id: null,
+            zxchart: null,
+            zxchart1: null,
+        },
+        computed: {},
+        methods: {
+            warningAlter: function (msg) {
+                this.$Modal.warning({
+                    title: "告警消息",
+                    content: msg
+                });
+            },
+            handleSpinShow() {
+                this.$Spin.show({
+                    render: (h) => {
+                        return h('div', [
+                            h('Icon', {
+                                'class': 'demo-spin-icon-load',
+                                props: {
+                                    type: 'ios-loading',
+                                    size: 18
+                                }
+                            }),
+                            h('div', 'Loading')
+                        ])
+                    }
+                });
+            },
+            handleSpinClose() {
+                this.$Spin.hide();
+            },
+            getQueryVariable: function (variable) {
+                var query = window.location.search.substring(1);
+                var vars = query.split("&");
+                for (var i = 0; i < vars.length; i++) {
+                    var pair = vars[i].split("=");
+                    if (pair[0] == variable) {
+                        return pair[1];
+                    }
+                }
+                return (false);
+            },
+            createEStandLineChart: function (conf) {
+                this.zxchart = echarts.init(document.getElementById("zxchart"));
+                var legendData = [];
+                for (var i = 0; i < conf.data.series.length; i++) {
+                    legendData.push(conf.data.series[i].name)
+                }
+                this.zxchart.setOption({
+                    tooltip: {
+                        show: true,
+                        trigger: 'axis'
+                    },
+                    legend: {
+                        y: 'bottom',
+                        data: legendData
+                    },
+                    toolbox: {
+                        show: true,
+                        feature: {
+                            mark: {show: true},
+                            dataView: {show: true, readOnly: false},
+                            magicType: {show: true, type: ['bar', 'line']},
+                            restore: {show: true},
+                            saveAsImage: {show: true}
+                        }
+                    },
+                    calculable: true,
+                    xAxis: [
+                        {
+                            type: 'category',
+                            data: conf.data.xAxis
+                        }
+                    ],
+                    yAxis: [
+                        {
+                            type: 'value',
+                            splitArea: {show: true}
+                        }
+                    ],
+                    series: conf.data.series
+                });
+            },
+            createEPieChart: function (conf) {
+                var myChart = echarts.init(document.getElementById(conf.selector));
+                var aLegend = [];
+                var series = conf.data.series;
+                for (var i = 0; i < series.length; i++) {
+                    aLegend[i] = series[i].name;
+                };
+                // 填入数据
+                myChart.setOption({
+                    title: {
+                        text: conf.data.title,
+                        subtext: '',
+                        x: 'center'
+                    },
+                    legend: {
+                        // x : 'left',
+                        y: 'bottom',
+                        data: aLegend
+                    },
+                    tooltip: {
+                        trigger: 'item',
+                        formatter: "{a} <br/>{b} : {c} ({d}%)"
+                    },
+                    toolbox: {
+                        show: true,
+                        feature: {
+                            mark: {show: true},
+                            dataView: {show: true, readOnly: false},
+                            magicType: {
+                                show: true,
+                                type: ['pie', 'funnel'],
+                                option: {
+                                    funnel: {
+                                        x: '25%',
+                                        width: '50%',
+                                        funnelAlign: 'left',
+                                        max: 1548
+                                    }
+                                }
+                            },
+                            restore: {show: true},
+                            saveAsImage: {show: true}
+                        }
+                    },
+                    calculable: true,
+                    series: [{
+                        // 根据名字对应到相应的系列
+                        name: '访问来源',
+                        type: 'pie',
+                        data: series
+                    }]
+                });
+            },
+            getEStandChartData: function () {
+                this.$http.get('get_graph_data', {}).then(res => {
+                    result_data = res.data;
+                    let conf = {
+                        data: result_data.data,
+                    };
+                    this.createEStandLineChart(conf);
+                });
+                //window.setInterval(() => {
+                //    this.updateChart();
+                //}, 6000)
+            },
+            getEPieChartData: function () {
+                this.$http.get('get_graph_data', {}).then(res => {
+                    result_data = res.data;
+                    let conf = {
+                        data: result_data.data,
+                    };
+                    this.createEStandLineChart(conf);
+                });
+            }
+        },
+        watch: {},
+        created: function () {
+            this.id = this.getQueryVariable('id');
+            this.getEStandChartData()
+        },
+        mounted: function () {
+        }
+    })
+</script>
+
+
+

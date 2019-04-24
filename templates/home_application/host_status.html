@@ -1,0 +1,153 @@
+<%inherit file="/base.html"/>
+
+<%block name="content">
+
+<div class="home-page" id="app">
+    <div style="width:80%; margin:0 auto">
+        <i-form :label-width="labelWidth">
+            <form-item label="请选择主机：">
+                <i-select v-model="selectedHost" style="">
+                    <i-option v-for="item in hostList" :value="item">{{ item.ip }}
+                    </i-option>
+                </i-select>
+            </form-item>
+        </i-form>
+        <div>
+            <div id="estandChart" style="float:left;width:100%;height:400px;border:1px solid #ccc;padding:10px;"></div>
+        </div>
+    </div>
+</div>
+<script src="https://magicbox.bk.tencent.com/static_api/v3/assets/js/jquery-1.10.2.min.js"></script>
+<script src="https://magicbox.bk.tencent.com/static_api/v3/assets/echarts-2.0/echarts-all.js"></script>
+</%block>
+
+<script>
+    vm = new Vue({
+        el: "#app",
+        data: {
+            labelWidth: 100,
+            hostList: [],
+            selectedHost: null,
+            standchart: null,
+        },
+        computed: {},
+        methods: {
+            successAlter: function (msg) {
+                this.$Modal.success({
+                    title: "提示消息",
+                    content: msg
+                });
+            },
+            warningAlter: function (msg) {
+                this.$Modal.warning({
+                    title: "告警消息",
+                    content: msg
+                });
+            },
+            successTip(msg) {
+                this.$Message.success(msg);
+            },
+            warningTip(msg) {
+                this.$Message.warning(msg);
+            },
+            errorTip(msg) {
+                this.$Message.error(msg);
+            },
+            handleSpinShow() {
+                this.$Spin.show({
+                    render: (h) => {
+                        return h('div', [
+                            h('Icon', {
+                                'class': 'demo-spin-icon-load',
+                                props: {
+                                    type: 'ios-loading',
+                                    size: 18
+                                }
+                            }),
+                            h('div', 'Loading')
+                        ])
+                    }
+                });
+            },
+            handleSpinClose() {
+                this.$Spin.hide();
+            },
+            listHost: function () {
+                this.$http.get('list_host').then(res => {
+                    this.hostList = res.data.data;
+                })
+            },
+            createEStandLineChart: function (conf) {
+                if (this.standchart == null) {
+                    this.standchart = echarts.init(document.getElementById("estandChart"));
+                }
+                var legendData = [];
+                for (var i = 0; i < conf.data.series.length; i++) {
+                    legendData.push(conf.data.series[i].name)
+                }
+                this.standchart.setOption({
+                    title: {
+                        show: true, //显示标题
+                        text: conf.title, //主标题
+                        subtext: '', //副标题
+                        link: '', //主标题文本超链接
+                        sublink: '', //副标题文本超链接
+                        x: 'center', //水平安放位置，默认为左侧，可选为：'center' | 'left' | 'right' | {number}
+                        y: 'top', //垂直安放位置，默认为全图顶端，可选为：'top' | 'bottom' | 'center' | {number}
+                    },
+                    tooltip: {
+                        show: true,
+                        trigger: 'axis'
+                    },
+                    legend: {
+                        y: 'bottom',
+                        data: legendData
+                    },
+                    toolbox: {
+                        show: true,
+                        feature: {
+                            mark: {show: true},
+                            dataView: {show: true, readOnly: false},
+                            magicType: {show: true, type: ['bar', 'line']},
+                            restore: {show: true},
+                            saveAsImage: {show: true}
+                        }
+                    },
+                    calculable: true,
+                    xAxis: [
+                        {
+                            type: 'category',
+                            data: conf.data.xAxis
+                        }
+                    ],
+                    yAxis: [
+                        {
+                            type: 'value',
+                            splitArea: {show: true}
+                        }
+                    ],
+                    series: conf.data.series
+                });
+            },
+            renderChart: function () {
+                this.$http.get('render_chart', {id: this.selectedHost.id}).then(res => {
+                    let result_data = res.data;
+                    if (result_data.result) {
+                        this.createEStandLineChart({
+                            title: this.selectedHost.ip,
+                            data: result_data.data
+                        })
+                    }
+                })
+            }
+        },
+        watch: {
+            selectedHost: function (val) {
+                this.renderChart()
+            }
+        },
+        created: function () {
+            this.listHost();
+        }
+    })
+</script>

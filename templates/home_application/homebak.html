@@ -1,0 +1,253 @@
+<%inherit file="/base.html"/>
+
+<%block name="content">
+
+    <div class="home-page" id="app">
+        <div style="width:80%">
+            <i-form :label-width="labelWidth">
+                <form-item label="请选择业务">
+                    <i-select v-model="selectBiz" style="">
+                        <i-option v-for="item in bizList" :value="item" :key="item.bk_biz_id">{{ item.bk_biz_name }}
+                        </i-option>
+                    </i-select>
+                </form-item>
+                <form-item label="请选择主机">
+                    <i-input v-model="selectedIp" type="textarea" :rows="4" placeholder="多个IP用换行符分隔"/>
+                </form-item>
+                <form-item>
+                    <i-button type="success" @click="searchHost">查询</i-button>
+                </form-item>
+
+            </i-form>
+            <div>
+                <i-table border :columns="thList" :data="tdList"></i-table>
+            </div>
+        </div>
+
+    </div>
+</%block>
+
+<script>
+    var vm = new Vue({
+        el: "#app",
+        data: {
+            labelWidth: 100,
+            selectBiz: null,
+            bizList: [],
+            selectedIp: "",
+            thList: [
+                {
+                    title: '内网IP',
+                    key: 'bk_host_innerip'
+                },
+                {
+                    title: '系统名',
+                    key: 'bk_os_name'
+                },
+                {
+                    title: '主机名',
+                    key: 'bk_host_name'
+                },
+                {
+                    title: '云区域',
+                    key: 'bk_inst_name'
+                },
+                {
+                    title: 'Men(%)',
+                    key: 'mem'
+                },
+                {
+                    title: 'Disk(%)',
+                    key: 'disk'
+                },
+                {
+                    title: 'CPU(%)',
+                    key: 'cpu'
+                },
+                {
+                    title: '操作',
+                    render: (h, params) => {
+                        return h('div', [
+                            h('i-button', {
+                                props: {
+                                    type: 'primary',
+                                    size: 'small'
+                                },
+                                style: {
+                                    marginRight: '5px'
+                                },
+                                on: {
+                                    click: () => {
+                                        vm.searchPerformance(params)
+                                    }
+                                }
+                            }, '查看'),
+                            h('i-button', {
+                                props: {
+                                    type: params.row.monitorObj.type,
+                                    size: 'small'
+                                },
+                                on: {
+                                    click: () => {
+                                        vm.toggleMonitor(params)
+                                    }
+                                }
+                            }, params.row.monitorObj.title)
+                        ]);
+                    }
+                }
+            ],
+            tdList: [],
+
+        },
+        computed: {},
+        methods: {
+            successAlter: function (msg) {
+                this.$Modal.success({
+                    title: "提示消息",
+                    content: msg
+                });
+            },
+            warningAlter: function (msg) {
+                this.$Modal.warning({
+                    title: "告警消息",
+                    content: msg
+                });
+            },
+            handleSpinShow() {
+                this.$Spin.show({
+                    render: (h) => {
+                        return h('div', [
+                            h('Icon', {
+                                'class': 'demo-spin-icon-load',
+                                props: {
+                                    type: 'ios-loading',
+                                    size: 18
+                                }
+                            }),
+                            h('div', 'Loading')
+                        ])
+                    }
+                });
+            },
+            handleSpinClose() {
+                this.$Spin.hide();
+            },
+            searchHost: function () {
+                let filter = {
+                    biz: [{
+                        "field": "bk_biz_id",
+                        "operator": "$eq",
+                        "value": this.selectBiz.bk_biz_id,
+                    }],
+                    //noLoading: true,
+                };
+                if (this.selectedIp != "" && this.selectedIp != null) {
+                    filter.ip = this.selectedIp.split('\n')
+                };
+                this.$http.post('get_host_list', filter).then(res => {
+                    let result_data = res.data;
+                    this.tdList = [];
+                    if (result_data.result) {
+                        hosts = result_data.data.info;
+                        for (let i = 0; i < hosts.length; i++) {
+                            host = hosts[i].host;
+                            this.tdList.push({
+                                bk_host_innerip: host.bk_host_innerip,
+                                bk_os_name: host.bk_os_name,
+                                bk_host_name: host.bk_host_name,
+                                bk_inst_name: host.bk_cloud_id[0].bk_inst_name,
+                                mem: '--',
+                                disk: '--',
+                                cpu: '--',
+                                bk_cloud_id: host.bk_cloud_id[0].id,
+                                monitor: host.is_exist,
+                                monitorObj: {
+                                    type: host.is_exist ? 'error' : 'success',
+                                    title: host.is_exist ? '移除' : '添加',
+                                },
+                            });
+                        }
+                    }
+                    else {
+                        this.warningAlter(result_data.message);
+                    }
+                })
+            },
+            searchPerformance: function (row) {
+                let theIp = {
+                    bk_biz_id: this.selectBiz.bk_biz_id,
+                    ip_list: [{
+                        "bk_cloud_id": row.row.bk_cloud_id,
+                        "ip": row.row.bk_host_innerip
+                    }]
+                };
+                this.handleSpinShow();
+                this.$http.post('search_performance', theIp).then(res => {
+                    this.handleSpinClose();
+                    let result_data = res.data;
+                    if (result_data.result) {
+                        let newItem = this.tdList[row.index];
+                        newItem.cpu = result_data.cpu;
+                        newItem.mem = result_data.mem;
+                        newItem.disk = result_data.disk;
+                        Vue.set(vm.tdList, row.index, newItem);
+                    }
+                    else {
+                        this.warningAlter(result_data.message);
+                    }
+                })
+            },
+            toggleMonitor: function (row) {
+                let is_monitor = this.tdList[row.index].monitor;
+                let param = {
+                    bk_biz_id: this.selectBiz.bk_biz_id,
+                    ip: row.row.bk_host_innerip,
+                    bk_cloud_id: row.row.bk_cloud_id,
+                    is_add: !is_monitor
+                };
+                this.$http.post('toggle_monitor', param).then(res => {
+                    let result_data = res.data;
+                    if (result_data.result) {
+                        this.successAlter('操作成功');
+                        this.tdList[row.index].monitor = !is_monitor;
+                        if (is_monitor) {
+                            this.tdList[row.index].monitorObj = {
+                                type: 'success',
+                                title: '添加',
+                            };
+                        }
+                        else {
+                            this.tdList[row.index].monitorObj = {
+                                type: 'error',
+                                title: '移除',
+                            };
+                        }
+                    }
+                    else {
+                        this.warningAlter(result_data.message);
+                    }
+                }).catch(res => {
+                    this.warningAlter(res.message);
+                })
+            }
+        },
+        watch: {},
+        created: function () {
+            this.$http.post('get_biz_list', {}).then(res => {
+                let result_data = res.data;
+                if (result_data.result) {
+                    this.bizList = result_data.data.info;
+                }
+                else {
+                    this.warningAlter(result_data.message);
+                }
+            }).catch(res => {
+                this.warningAlter(res.message);
+            })
+        }
+    })
+</script>
+
+
+

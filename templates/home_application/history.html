@@ -1,0 +1,175 @@
+<%inherit file="/base.html"/>
+
+<%block name="content">
+
+<div class="home-page" id="app">
+    <div style="width:80%">
+        <i-form :label-width="labelWidth">
+            <form-item label="选择业务">
+                <i-select v-model="selectedBiz" style="">
+                    <i-option v-for="item in bizList" :value="item" :key="item.bk_biz_id">{{ item.bk_biz_name }}
+                    </i-option>
+                </i-select>
+            </form-item>
+            <form-item label="请输入主机IP">
+                <i-input v-model="ip"></i-input>
+            </form-item>
+            <form-item>
+                <i-button type="success" @click="searchRecord">查询</i-button>
+            </form-item>
+        </i-form>
+        <div>
+            <i-table border :columns="thList" :data="tdList"></i-table>
+        </div>
+        <Modal v-model="modal1" title="查看日志">
+            <i-table border :columns="logthList" :data="logtdList"></i-table>
+        </Modal>
+    </div>
+
+</div>
+</%block>
+
+<script>
+    vm = new Vue({
+        el: "#app",
+        data: {
+            labelWidth: 100,
+            selectedBiz: null,
+            bizList: [],
+            ip: "",
+            thList: [
+                {
+                    title: '业务',
+                    key: 'bk_biz_id'
+                },
+                {
+                    title: '用户',
+                    key: 'create_user'
+                },
+                {
+                    title: '作业ID',
+                    key: 'job_id'
+                },
+                {
+                    title: '操作时间',
+                    key: 'create_time'
+                },
+                {
+                    title: '主机列表',
+                    key: 'ips'
+                },
+                {
+                    title: '作业状态',
+                    key: 'status'
+                },
+                {
+                    title: '作业日志',
+                    render: (h, params) => {
+                        return h('div', [
+                            h('i-button', {
+                                props: {
+                                    type: 'primary',
+                                    size: 'small'
+                                },
+                                style: {
+                                    marginRight: '5px'
+                                },
+                                on: {
+                                    click: () => {
+                                        vm.showLog(params.row)
+                                    }
+                                }
+                            }, '查看日志')
+                        ]);
+                    }
+                },
+            ],
+            tdList: [],
+            logthList: [
+                {
+                    title: 'ip',
+                    key: 'ip'
+                },
+                {
+                    title: '日志',
+                    key: 'log'
+                },
+            ],
+            logtdList: [],
+            modal1: false,
+        },
+        computed: {},
+        methods: {
+            successAlter: function (msg) {
+                this.$Modal.success({
+                    title: "提示消息",
+                    content: msg
+                });
+            },
+            warningAlter: function (msg) {
+                this.$Modal.warning({
+                    title: "告警消息",
+                    content: msg
+                });
+            },
+            handleSpinShow() {
+                this.$Spin.show({
+                    render: (h) => {
+                        return h('div', [
+                            h('Icon', {
+                                'class': 'demo-spin-icon-load',
+                                props: {
+                                    type: 'ios-loading',
+                                    size: 18
+                                }
+                            }),
+                            h('div', 'Loading')
+                        ])
+                    }
+                });
+            },
+            handleSpinClose() {
+                this.$Spin.hide();
+            },
+            searchBiz: function () {
+                this.$http.post('search_biz').then(res => {
+                    let result_data = res.data;
+                    if (result_data.result) {
+                        this.bizList = result_data.data.info;
+                    }
+                    else {
+                        this.warningAlter("查询业务信息失败");
+                    }
+                })
+            },
+            searchRecord: function () {
+                this.$http.get('search_record', {bk_biz_id: this.selectedBiz.bk_biz_id, ip: this.ip}).then(res => {
+                    result_data = res.data;
+                    if (result_data.result) {
+                        this.tdList = result_data.data;
+                    }
+                    else {
+                        this.warningAlter('查询失败')
+                    }
+                })
+            },
+            showLog: function (row) {
+                this.modal1 = true;
+                this.logtdList = [];
+                for (let i = 0; i < row.log_content.length; i++) {
+                    this.logtdList.push({
+                        ip: row.log_content[i].ip,
+                        log: row.log_content[i].log_content,
+                    });
+                }
+            },
+            cancel: function () {
+                this.modal1 = false;
+            }
+        },
+        watch: {},
+        created: function () {
+            this.searchBiz();
+        }
+    })
+</script>

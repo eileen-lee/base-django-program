@@ -1,0 +1,68 @@
+<%inherit file="/base.html"/>
+
+<%block name="content">
+
+<div class="home-page" id="app">
+    <div style="width:80%; margin:0 auto">
+        <div>
+        </div>
+    </div>
+
+</div>
+</%block>
+
+<script>
+    vm = new Vue({
+        el: "#app",
+        data: {
+            labelWidth: 100,
+        },
+        computed: {},
+        methods: {
+            successAlter: function (msg) {
+                this.$Modal.success({
+                    title: "提示消息",
+                    content: msg
+                });
+            },
+            warningAlter: function (msg) {
+                this.$Modal.warning({
+                    title: "告警消息",
+                    content: msg
+                });
+            },
+            successTip (msg) {
+                this.$Message.success(msg);
+            },
+            warningTip (msg) {
+                this.$Message.warning(msg);
+            },
+            errorTip (msg) {
+                this.$Message.error(msg);
+            },
+            handleSpinShow() {
+                this.$Spin.show({
+                    render: (h) => {
+                        return h('div', [
+                            h('Icon', {
+                                'class': 'demo-spin-icon-load',
+                                props: {
+                                    type: 'ios-loading',
+                                    size: 18
+                                }
+                            }),
+                            h('div', 'Loading')
+                        ])
+                    }
+                });
+            },
+            handleSpinClose() {
+                this.$Spin.hide();
+            },
+        },
+        watch: {
+        },
+        created: function () {
+        }
+    })
+</script>

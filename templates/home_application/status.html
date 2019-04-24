@@ -1,0 +1,209 @@
+<%inherit file="/base.html"/>
+
+<%block name="content">
+
+    <div class="home-page" id="app">
+        <div style="width:80%">
+            <i-form :label-width="labelWidth">
+                <form-item label="请选择业务">
+                    <i-select v-model="selectBiz" style="">
+                        <i-option v-for="item in bizList" :value="item" :key="item.bk_biz_id">{{ item.bk_biz_name }}
+                        </i-option>
+                    </i-select>
+                </form-item>
+                <form-item label="请选择主机">
+                    <i-input v-model="selectedIp" type="textarea" :rows="4" placeholder="多个IP用换行符分隔"/>
+                </form-item>
+                <form-item>
+                    <i-button type="success" @click="showChart">查询</i-button>
+                </form-item>
+
+            </i-form>
+            <div>
+                <div v-for="item in chartId" :id="item"
+                     style="float:left;height:400px;width:40%;border:1px solid #ccc;padding:10px;"></div>
+            </div>
+        </div>
+
+    </div>
+    <script src="https://magicbox.bk.tencent.com/static_api/v3/assets/js/jquery-1.10.2.min.js"></script>
+    <script src="https://magicbox.bk.tencent.com/static_api/v3/assets/echarts-2.0/echarts-all.js"></script>
+</%block>
+
+<script>
+    var vm = new Vue({
+        el: "#app",
+        data: {
+            labelWidth: 100,
+            selectBiz: null,
+            bizList: [],
+            selectedIp: "",
+            chartId: [],
+
+        },
+        computed: {},
+        methods: {
+            warningAlter: function (msg) {
+                this.$Modal.warning({
+                    title: "告警消息",
+                    content: msg
+                });
+            },
+            handleSpinShow() {
+                this.$Spin.show({
+                    render: (h) => {
+                        return h('div', [
+                            h('Icon', {
+                                'class': 'demo-spin-icon-load',
+                                props: {
+                                    type: 'ios-loading',
+                                    size: 18
+                                }
+                            }),
+                            h('div', 'Loading')
+                        ])
+                    }
+                });
+            },
+            handleSpinClose() {
+                this.$Spin.hide();
+            },
+            createEStandLineChart: function (conf) {
+                var legendData = [];
+                for (var i = 0; i < conf.data.series.length; i++) {
+                    legendData.push(conf.data.series[i].name)
+                }
+                conf.chart.setOption({
+                    title: {
+                        show: true, //显示标题
+                        text: conf.title, //主标题
+                        subtext: '', //副标题
+                        link: '', //主标题文本超链接
+                        sublink: '', //副标题文本超链接
+                        x: 'center', //水平安放位置，默认为左侧，可选为：'center' | 'left' | 'right' | {number}
+                        y: 'top', //垂直安放位置，默认为全图顶端，可选为：'top' | 'bottom' | 'center' | {number}
+                    },
+                    tooltip: {
+                        show: true,
+                        trigger: 'axis'
+                    },
+                    legend: {
+                        y: 'bottom',
+                        data: legendData
+                    },
+                    toolbox: {
+                        show: true,
+                        feature: {
+                            mark: {show: true},
+                            dataView: {show: true, readOnly: false},
+                            magicType: {show: true, type: ['bar', 'line']},
+                            restore: {show: true},
+                            saveAsImage: {show: true}
+                        }
+                    },
+                    calculable: true,
+                    xAxis: [
+                        {
+                            type: 'category',
+                            data: conf.data.xAxis
+                        }
+                    ],
+                    yAxis: [
+                        {
+                            type: 'value',
+                            splitArea: {show: true}
+                        }
+                    ],
+                    series: conf.data.series
+                });
+            },
+            updateChart: function (myChart, param) {
+                this.$http.post('get_chart_data', param).then(res => {
+                    let result_data = res.data;
+                    if (result_data.result) {
+                        conf = {
+                            title: param.ip,
+                            chart: myChart,
+                            data: result_data.chart_data,
+                        };
+                        this.createEStandLineChart(conf)
+                    }
+                    else {
+                        this.warningAlter(result_data.message);
+                    }
+                }).catch(res => {
+                    this.warningAlter(res.message);
+                })
+            },
+            getCharData: function () {
+
+            },
+            showChart: function () {
+                let ip_list = [];
+                if (this.selectedIp != "" && this.selectedIp != null) {
+                    ip_list = this.selectedIp.split('\n');
+                }
+                let param = {
+                    bk_biz_id: this.selectBiz.bk_biz_id,
+                    ip_list: ip_list,
+                };
+                this.$http.post('get_monitor_host', param).then(res => {
+                    let result_data = res.data;
+                    if (result_data.result) {
+                        this.chartId = [];
+                        param.ip_list = [];
+                        for (let i = 0; i < result_data.data.length; i++) {
+                            this.chartId.push("chart" + i);
+                        }
+                        window.setTimeout(() => {
+                            let mychartList = [];
+                            for (let i = 0; i < result_data.data.length; i++) {
+                                mychartList.push(echarts.init(document.getElementById(this.chartId[i])));
+                            }
+                            for (let i = 0; i < result_data.data.length; i++) {
+                                let getDataParam = {
+                                    bk_biz_id: param.bk_biz_id,
+                                    ip: result_data.data[i].ip,
+                                };
+                                this.updateChart(mychartList[i], getDataParam)
+                            }
+                            window.setInterval(() => {
+                                for (let i = 0; i < result_data.data.length; i++) {
+                                    let getDataParam = {
+                                        bk_biz_id: param.bk_biz_id,
+                                        ip: result_data.data[i].ip,
+                                    };
+                                    this.updateChart(mychartList[i], getDataParam)
+                                }
+                            }, 60000)
+                        }, 1000);
+                    }
+                    else {
+                        this.warningAlter(result_data.message);
+                    }
+                }).catch(res => {
+                    this.warningAlter(res.message);
+                });
+            }
+        },
+        watch: {},
+        created: function () {
+            this.$http.post('get_biz_list', {}).then(res => {
+                let result_data = res.data;
+                if (result_data.result) {
+                    this.bizList = result_data.data.info;
+                }
+                else {
+                    this.warningAlter(result_data.message);
+                }
+            }).catch(res => {
+                this.warningAlter(res.message);
+            })
+        },
+        mounted: function () {
+        }
+    })
+</script>
+
+
+
