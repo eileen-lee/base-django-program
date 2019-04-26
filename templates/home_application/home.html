@@ -76,7 +76,8 @@
             name: '',
             gender: '',
             age: '',
-            score: ''
+            score: '',
+            index:''
             },
             name:'',
             labelWidth: 100,
@@ -166,43 +167,31 @@
                 });
             },
             getList(){
-                this.$http.get('get_data').then(res => {
+                this.$http.get('test').then(res => {
                     this.dataList = res.data;
                 })
             },
             searchMsg() {
-                this.$http.get('get_partInfo',{name:this.name}).then(res => {
+                this.$http.get('test',{name:this.name}).then(res => {
                     this.dataList = res.data;
                 })
             },
             submitMsg() {
-                this.$http.post('add_data',{form:this.form}).then(res => {
-                    let submit_status= res.data;
-                    if (submit_status.is_ok){
-                        this.getList();
-                        this.dataList = res.data;
-                        this.form = {
-                            name: '',
-                            gender: '',
-                            age: '',
-                            score: ''
-                        }
-                    }
-                    else{
-                        this.warningAlter('操作失败')
+                this.$http.post('test',this.form).then(res => {
+                    this.getList();
+                    this.dataList = res.data;
+                    this.form = {
+                        name: '',
+                        gender: '',
+                        age: '',
+                        score: ''
                     }
                 })
             },
             editMsg() {
-                this.$http.post('update_data',{form1:this.form1}).then(res => {
-                    let edit_status= res.data;
-                    if (edit_status.is_ok){
-                        this.getList();
-                        this.dataList = res.data
-                    }
-                    else{
-                        this.warningAlter('操作失败')
-                    }
+                this.$http.put('test/'+this.form1.id,this.form1).then(res => {
+                    this.getList();
+                    this.dataList = res.data
                 })
             },
             show (index) {
@@ -212,15 +201,9 @@
                 })
             },
             remove (index) {
-                this.$http.post('delete_data',{id:this.dataList[index].id}).then(res => {
-                    let remove_status= res.data;
-                    if (remove_status.is_ok){
-                        this.getList();
-                        this.dataList = res.data
-                    }
-                    else{
-                        this.warningAlter('操作失败')
-                    }
+                this.$http.delete('test/'+this.dataList[index].id).then(res => {
+                    this.getList();
+                    this.dataList = res.data
                 })
             },
             edit (index) {
@@ -229,7 +212,8 @@
                 this.form1.name = this.dataList[index].name,
                 this.form1.gender = this.dataList[index].gender,
                 this.form1.age = this.dataList[index].age,
-                this.form1.score = this.dataList[index].score
+                this.form1.score = this.dataList[index].score,
+                this.form1.index = index
             },
             ok () {
                 this.$Message.info('Clicked ok');

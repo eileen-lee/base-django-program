@@ -1,17 +1,21 @@
 # -*- coding: utf-8 -*-
 
 from django.conf.urls import patterns
+from django.conf.urls import url, include
+from rest_framework import routers
+from . import views
 
+router = routers.DefaultRouter()
+router.register(r'test', views.TestViewSet)
+
+# 使用自动URL路由连接我们的API。
+# 另外，我们还包括支持浏览器浏览API的登录URL。
 urlpatterns = patterns(
     'home_application.views',
-    (r'^$', 'home'),
-    (r'^host_status/$', 'host_status'),
-    (r'^test_drf/$', 'test_drf'),
-    (r'^dev-guide/$', 'dev_guide'),
-    (r'^api/test/$', 'test'),
-    (r'^get_data/$', 'get_data'),
-    (r'^get_partInfo/$', 'get_partInfo'),
-    (r'^add_data/$', 'add_data'),
-    (r'^update_data/$', 'update_data'),
-    (r'^delete_data/$', 'delete_data'),
+    (r'^$', 'home')
 )
+
+urlpatterns += [
+    url(r'^', include(router.urls)),
+    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework'))
+]

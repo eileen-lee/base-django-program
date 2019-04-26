@@ -18,27 +18,19 @@ from home_application.celery_tasks import chain_task
 from home_application.commons import CcApiAdapter, JobApiAdapter, get_job_log_content, execute_job_and_get_log, \
     host_key, execute_script_and_get_log
 from .models import TestInfo
+from rest_framework import viewsets
+from .serializers import TestSerializer
+import django_filters
+from django_filters import STRICTNESS
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.response import Response
 from django.shortcuts import render
+
 
 def home(request):
     """
     首页
     """
-    # if request.user.is_authenticated():
-    #     bk_token = request.COOKIES.get('bk_token', '')
-    # else:
-    #     bk_token = ''
-    # try:
-    #     CookieData.objects.create(value=bk_token)
-    # except:
-    #     pass
-    # param1 = {
-    #     'a': '1'
-    # }
-    # param2 = {
-    #     'b': '2'
-    # }
-    # chain_task.delay(param1, param2)
     return render_mako_context(request, '/home_application/home.html')
 
 
@@ -76,73 +68,26 @@ def test(request):
     """
     return render_json({'username': request.user.username, 'result': 'OK'})
 
-def get_data(request):
-    """
-    获取全部学生信息
-    """
-    data = TestInfo.objects.all()#查询集
-    list_data = []
-    result_data = list(data)      #实例列表
-    for i in result_data:
-        xx = {}
-        xx['id'] = i.id
-        xx['name'] = i.name
-        xx['gender'] = i.gender
-        xx['age'] = i.age
-        xx['score'] = i.score
-        list_data.append(xx)
-    return HttpResponse(json.dumps(list_data))
-    # return render(request,'home.html',data)
 
-def get_partInfo(request):
-    """
-    获取部分学生信息
-    """
-    param = request.GET['name']
-    data = TestInfo.objects.all()     #查询集
-    list_data = []
-    result_data = list(data)      #实例列表
-    for i in result_data:
-        if param in i.name:
-            xx = {}
-            xx['id'] = i.id
-            xx['name'] = i.name
-            xx['gender'] = i.gender
-            xx['age'] = i.age
-            xx['score'] = i.score
-            list_data.append(xx)
-    return HttpResponse(json.dumps(list_data))
+# drf模式
 
-def add_data(request):
-    """
-    新增信息到数据库
-    """
-    param = request.body
-    datas = json.loads(param)
-    params = datas['form']
-    TestInfo.objects.create(**params)
-    list_data = {'is_ok': True}
-    return HttpResponse(json.dumps(list_data))
+class TestFtr(django_filters.FilterSet):
+    class Meta:
+        model = TestInfo
+        strict = STRICTNESS.RAISE_VALIDATION_ERROR
+        fields = ("id", "name")
 
-def update_data(request):
-    """
-    更新数据库数据
-    """
-    param = request.body
-    datas = json.loads(param)
-    params = datas['form1']
-    input_id = params.pop('id')
-    TestInfo.objects.filter(id=input_id).update(**params)
-    list_data = {'is_ok': True}
-    return HttpResponse(json.dumps(list_data))
+class TestViewSet(viewsets.ModelViewSet):
+    queryset = TestInfo.objects.all()
+    serializer_class = TestSerializer
+    filter_backends = (DjangoFilterBackend,)
+    filter_class = TestFtr
 
-def delete_data(request):
-    """
-    删除数据库数据
-    """
-    param = request.body
-    datas = json.loads(param)
-    input_id = datas['id']
-    TestInfo.objects.filter(id=input_id).delete()
-    list_data = {'is_ok': True}
-    return HttpResponse(json.dumps(list_data))
+
+
+
+
+
+
+
+

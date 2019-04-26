@@ -98,6 +98,16 @@
             return axios.post(site_url + url + '/', params).catch(res => {
                 console.log(res.message);
             })
+        },
+        "put": (url, params={}) => {
+            return axios.put(site_url + url + '/', params).catch(res => {
+                console.log(res.message);
+            })
+        },
+        "delete": (url, params={}) => {
+            return axios.delete(site_url + url + '/', params).catch(res => {
+                console.log(res.message);
+            })
         }
     };
     //只需输入方法名，前后不需要斜杠
