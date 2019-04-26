@@ -43,5 +43,5 @@
 	conf/settings_testing.py 文件：DATABASES（测试环境数据库信息）
 	conf/settings_production.py 文件：DATABASES（正式环境数据库信息）
 	
-说明：此项目为第一个django项目，旨在了解django开发过程，开发内容是home_application中的home.html，即首页内容（master分支）
-即将上传：将首页内容更改为drf模式（分支）
+说明：此项目为第一个django项目，旨在了解django开发过程，开发内容是home_application中的home.html，即首页内容（master分支）,drf分支为
+django rest framework版本（drf分支）
