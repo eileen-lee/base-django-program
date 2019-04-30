@@ -105,6 +105,7 @@
             status:'',
             mathScore:'',
             englishScore:'',
+            warnInfo:'',
             thList: [
                     {
                         title: '学号',
@@ -221,7 +222,7 @@
             },
             submitMsg() {
                 this.$http.post('chinese',this.form).then(res => {
-                    if (res.status == 201){
+                    if (res != undefined && res.status == 201){
                         this.postMathMsg();
                         this.getList();
                         this.dataList = res.data;
@@ -232,9 +233,9 @@
                             chinese_score: ''
                             }
                     }
-                    //else{
-                       // this.warningAlter('操作失败')
-                    //}
+                    else{
+                        this.warningAlter('操作失败,请检查信息填写是否正确！')
+                    }
                 }).catch(res => {
                     console.log(res)
                     this.warningAlter('提交失败,请检查信息填写是否正确！')

@@ -25,6 +25,7 @@ from django_filters import STRICTNESS
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.response import Response
 from django.shortcuts import render
+from rest_framework import status
 
 
 def home(request):
@@ -82,6 +83,17 @@ class ChineseViewSet(viewsets.ModelViewSet):
     serializer_class = ChineseSerializer
     filter_backends = (DjangoFilterBackend,)
     filter_class = ChineseFtr
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            result_data = {'data': serializer.errors,
+                           'is_ok':False}
+            # return Response(serializer.errors, status=status.HTTP_200_OK)
+            return Response(result_data, status=status.HTTP_200_OK)
 
 class MathFtr(django_filters.FilterSet):
     class Meta:

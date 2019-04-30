@@ -85,6 +85,7 @@ class ChineseScore(models.Model):
     age = models.IntegerField(default=0)
     chinese_score = models.IntegerField(default=0)
 
+
 class MathScores(models.Model):
     name = models.CharField(max_length=10)
     gender = models.CharField(max_length=5)
