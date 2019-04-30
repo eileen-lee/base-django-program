@@ -1,7 +1,12 @@
-from .models import TestInfo
+from .models import ChineseScore,MathScores
 from rest_framework import serializers
 
-class TestSerializer(serializers.ModelSerializer):
+class ChineseSerializer(serializers.ModelSerializer):
     class Meta:
-        model = TestInfo
-        fields = ('id', 'name', 'gender', 'age','score')
+        model = ChineseScore
+        fields = ('id', 'name', 'gender', 'age','chinese_score')
+
+class MathSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MathScores
+        fields = ('id', 'name', 'gender', 'age','math_score','english_score')

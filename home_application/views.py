@@ -17,9 +17,9 @@ from conf.default import APP_ID, APP_TOKEN, BK_PAAS_HOST
 from home_application.celery_tasks import chain_task
 from home_application.commons import CcApiAdapter, JobApiAdapter, get_job_log_content, execute_job_and_get_log, \
     host_key, execute_script_and_get_log
-from .models import TestInfo
+from .models import ChineseScore,MathScores
 from rest_framework import viewsets
-from .serializers import TestSerializer
+from .serializers import ChineseSerializer,MathSerializer
 import django_filters
 from django_filters import STRICTNESS
 from django_filters.rest_framework import DjangoFilterBackend
@@ -71,17 +71,29 @@ def test(request):
 
 # drf模式
 
-class TestFtr(django_filters.FilterSet):
+class ChineseFtr(django_filters.FilterSet):
     class Meta:
-        model = TestInfo
+        model = ChineseScore
         strict = STRICTNESS.RAISE_VALIDATION_ERROR
         fields = ("id", "name")
 
-class TestViewSet(viewsets.ModelViewSet):
-    queryset = TestInfo.objects.all()
-    serializer_class = TestSerializer
+class ChineseViewSet(viewsets.ModelViewSet):
+    queryset = ChineseScore.objects.all()
+    serializer_class = ChineseSerializer
     filter_backends = (DjangoFilterBackend,)
-    filter_class = TestFtr
+    filter_class = ChineseFtr
+
+class MathFtr(django_filters.FilterSet):
+    class Meta:
+        model = MathScores
+        strict = STRICTNESS.RAISE_VALIDATION_ERROR
+        fields = ("id", "name")
+
+class MathViewSet(viewsets.ModelViewSet):
+    queryset = MathScores.objects.all()
+    serializer_class = MathSerializer
+    filter_backends = (DjangoFilterBackend,)
+    filter_class = MathFtr
 
 
 

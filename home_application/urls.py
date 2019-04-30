@@ -6,7 +6,8 @@ from rest_framework import routers
 from . import views
 
 router = routers.DefaultRouter()
-router.register(r'test', views.TestViewSet)
+router.register(r'chinese', views.ChineseViewSet)
+router.register(r'math', views.MathViewSet)
 
 # 使用自动URL路由连接我们的API。
 # 另外，我们还包括支持浏览器浏览API的登录URL。

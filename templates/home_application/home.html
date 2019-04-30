@@ -25,15 +25,21 @@
                     <form-item label="年龄">
                         <i-input v-model="form.age" type="text"></i-input>
                     </form-item>
-                    <form-item label="分数">
-                        <i-input v-model="form.score" type="text"></i-input>
+                    <form-item label="语文">
+                        <i-input v-model="form.chinese_score" type="text"></i-input>
+                    </form-item>
+                    <form-item label="数学">
+                        <i-input v-model="form.math_score" type="text"></i-input>
+                    </form-item>
+                    <form-item label="英语">
+                        <i-input v-model="form.english_score" type="text"></i-input>
                     </form-item>
                     <form-item>
                         <i-button type="primary" @click="submitMsg">Submit</i-button>
                     </form-item>
                 </i-form>
             </Modal>
-            <Modal v-model="modal2" title="add" @on-ok="ok" @on-cancel="cancel">
+            <Modal v-model="modal2" title="edit" @on-ok="ok" @on-cancel="cancel">
                 <i-form :label-width="80">
                     <form-item label="姓名">
                         <i-input v-model="form1.name" type="text"></i-input>
@@ -44,8 +50,14 @@
                     <form-item label="年龄">
                         <i-input v-model="form1.age" placeholder="" type="text"></i-input>
                     </form-item>
-                    <form-item label="分数">
-                        <i-input v-model="form1.score" placeholder="" type="text"></i-input>
+                    <form-item label="语文">
+                        <i-input v-model="form1.chinese_score" type="text"></i-input>
+                    </form-item>
+                    <form-item label="数学">
+                        <i-input v-model="form1.math_score" type="text"></i-input>
+                    </form-item>
+                    <form-item label="英语">
+                        <i-input v-model="form1.english_score" type="text"></i-input>
                     </form-item>
                     <form-item>
                         <i-button type="primary" @click="editMsg">Submit</i-button>
@@ -69,21 +81,30 @@
             name: '',
             gender: '',
             age: '',
-            score: ''
+            chinese_score: '',
+            math_score:'',
+            english_score:''
             },
+            id:'',
             form1: {
             id:'',
             name: '',
             gender: '',
             age: '',
-            score: '',
-            index:''
+            chinese_score: '',
+            index:'',
+            math_score:'',
+            english_score:''
             },
             name:'',
             labelWidth: 100,
             modal1: false,
             modal2: false,
             dataList: [],
+            dataList1: {},
+            status:'',
+            mathScore:'',
+            englishScore:'',
             thList: [
                     {
                         title: '学号',
@@ -166,42 +187,73 @@
                     content: msg
                 });
             },
-            getList(){
-                this.$http.get('test').then(res => {
+            getList() {
+                this.$http.get('chinese').then(res => {
+                    this.dataList = res.data;
+            })
+            },
+            getMathList(index) {
+                this.$http.get('math/'+this.id).then(res => {
+                    this.mathScore = res.data.math_score;
+                    this.englishScore = res.data.english_score;
+                    this.$Modal.info({
+                    title: 'Score Info',
+                    content: "语文: " + this.dataList[index].chinese_score + "<br>数学: " + this.mathScore + "<br>英语: " + this.englishScore
+                })
+            })
+            },
+            searchMsg() {
+                this.$http.get('chinese',{name:this.name}).then(res => {
                     this.dataList = res.data;
                 })
             },
-            searchMsg() {
-                this.$http.get('test',{name:this.name}).then(res => {
-                    this.dataList = res.data;
+            postMathMsg() {
+                this.$http.post('math',this.form).then(res => {
+                })
+            },
+            deleteMathMsg(index) {
+                this.$http.delete('math/'+this.dataList[index].id).then(res => {
+                })
+            },
+            updateMathMsg() {
+                this.$http.put('math/'+this.form1.id,this.form1).then(res => {
                 })
             },
             submitMsg() {
-                this.$http.post('test',this.form).then(res => {
-                    this.getList();
-                    this.dataList = res.data;
-                    this.form = {
-                        name: '',
-                        gender: '',
-                        age: '',
-                        score: ''
+                this.$http.post('chinese',this.form).then(res => {
+                    if (res.status == 201){
+                        this.postMathMsg();
+                        this.getList();
+                        this.dataList = res.data;
+                        this.form = {
+                            name: '',
+                            gender: '',
+                            age: '',
+                            chinese_score: ''
+                            }
                     }
-                })
+                    //else{
+                       // this.warningAlter('操作失败')
+                    //}
+                }).catch(res => {
+                    console.log(res)
+                    this.warningAlter('提交失败,请检查信息填写是否正确！')
+            })
             },
             editMsg() {
-                this.$http.put('test/'+this.form1.id,this.form1).then(res => {
+                this.$http.put('chinese/'+this.form1.id,this.form1).then(res => {
+                    this.updateMathMsg();
                     this.getList();
                     this.dataList = res.data
                 })
             },
             show (index) {
-                this.$Modal.info({
-                    title: 'Score Info',
-                    content: "score: "+this.dataList[index].score
-                })
+                this.id = this.dataList[index].id;
+                this.getMathList(index);
             },
             remove (index) {
-                this.$http.delete('test/'+this.dataList[index].id).then(res => {
+                this.$http.delete('chinese/'+this.dataList[index].id).then(res => {
+                    this.deleteMathMsg(index);
                     this.getList();
                     this.dataList = res.data
                 })
@@ -212,8 +264,14 @@
                 this.form1.name = this.dataList[index].name,
                 this.form1.gender = this.dataList[index].gender,
                 this.form1.age = this.dataList[index].age,
-                this.form1.score = this.dataList[index].score,
-                this.form1.index = index
+                this.form1.chinese_score = this.dataList[index].chinese_score,
+                this.form1.index = index;
+                this.$http.get('math/'+this.form1.id).then(res => {
+                    this.mathScore = res.data.math_score;
+                    this.englishScore = res.data.english_score;
+                    this.form1.math_score = this.mathScore,
+                    this.form1.english_score = this.englishScore;
+                })
             },
             ok () {
                 this.$Message.info('Clicked ok');

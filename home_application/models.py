@@ -79,5 +79,16 @@ class TestInfo(models.Model):
     age = models.IntegerField(default=0)
     score = models.IntegerField(default=0)
 
+class ChineseScore(models.Model):
+    name = models.CharField(max_length=10)
+    gender = models.CharField(max_length=5)
+    age = models.IntegerField(default=0)
+    chinese_score = models.IntegerField(default=0)
 
+class MathScores(models.Model):
+    name = models.CharField(max_length=10)
+    gender = models.CharField(max_length=5)
+    age = models.IntegerField(default=0)
+    math_score = models.IntegerField(default=0)
+    english_score = models.IntegerField(default=0)
 
